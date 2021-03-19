@@ -68,4 +68,4 @@ if __name__ == "__main__":
         permutation_results.loc[nearest, 'base'] = survival.loc[nearest,'coef']
         permutation_results.loc[nearest, 'perms'] = perm_results
 
-        pickle.dump(permutation_results, open("permutation_results.p", "wb"))
+        pickle.dump(permutation_results, open("results/permutation_results.p", "wb"))

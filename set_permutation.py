@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     genes = expression_df.index
 
-    activities = pickle.load(open('metabric_path_activities.p', 'rb'))
+    activities = pickle.load(open('results/metabric_path_activities.p', 'rb'))
     set_sizes = np.unique(activities['set_size'])
 
     num_cores = multiprocessing.cpu_count() - 1
@@ -44,11 +44,11 @@ if __name__ == "__main__":
         print('Permutations for set size ' + str(set_size) + ', ' + str(i) + '/' + str(len(set_sizes)))
         permutaions = Parallel(n_jobs = num_cores, prefer="threads")(delayed(permute_set)(set_size) for i in range(num_perm))
         results.loc[set_size] = permutaions 
-        pickle.dump(results, open('set_permutation_results.p', 'wb'))
+        pickle.dump(results, open('results/set_permutation_results.p', 'wb'))
 
 ###
     
-    survival = pickle.load(open('metabric_path_survival.p', 'rb'))
+    survival = pickle.load(open('results/metabric_path_survival.p', 'rb'))
     survival.index = [x.replace('_','-') for x in survival.index]
     survival['ngenes'] = activity['set_size']
 
