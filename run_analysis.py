@@ -142,7 +142,7 @@ def metabric_cross_validation(activity_df, metadata_df):
 
 if __name__ == "__main__":
     metabric_path = '../../data/metabric'
-    illumina2ensembl_path = '../../data/reactome/illumina2ensembl.txt'
+    illumina2ensembl_path = 'data/illumina2ensembl.txt'
 
     data = load_metabric(metabric_path)
     expression_df = data.iloc[8:,:]
