@@ -72,20 +72,31 @@ def return_pathway(data, reactome_df, reactome_id):
     genes = np.unique(reactome_df.where(reactome_df['reactome_id'] == reactome_id)['probe'].dropna().tolist())
     return data.loc[genes].T
 
-
 def porch_metabric(expression_df, reactome_df):
     exp_df = expression_df.copy()
     reactome_df = get_reactome_illumina(illumina2ensembl_path) 
     activity, eigen_samples, untested  = porch.porch_single_process(exp_df, reactome_df, gene_column = 'probe', set_column = 'reactome_id')
     return activity
 
-
 def metabric_survival(activity_df, metadata_df):
-    metadata_df.loc['E'] = (metadata_df.loc['last_follow_up_status'] == 'd-d.s.')*1
+    metadata_df['E'] = (metadata_df['last_follow_up_status'] == 'd-d.s.')*1
     result = pd.DataFrame()
     for index, row in activity_df.iterrows():
         print("Cox's regression: " + str(index))
         rowresult = porch.survival(row, metadata_df, duration_col = 'T', event_col = 'E')
+        result = result.append(rowresult)
+    return result
+
+def metabric_survival_control(activity_df, metadata_df, control):
+    metadata_df['E'] = (metadata_df['last_follow_up_status'] == 'd-d.s.')*1
+    metadata_df[control] = metadata_df[control].astype(float)
+    result = pd.DataFrame()
+    for index, row in activity_df.iterrows():
+        print("Cox's regression: " + str(index) + ", controlled for " + control)
+        try:
+            rowresult = porch.survival(row, metadata_df, duration_col = 'T', event_col = 'E', other_cols=[control])
+        except:
+            rowresult = pd.Series(np.repeat(1,10), index=rowresult.index, name=index)
         result = result.append(rowresult)
     return result
 
@@ -95,7 +106,6 @@ def survival_cross_validation(row, phenotype_df, duration_col = 'T', event_col =
     event_col: whether an event (death or other) has ocured or not. 0 for no, 1 for yes
     other_cols: other variables to consider in the regression
     """
-    phenotype_df = phenotype_df.T # This should be fixed
     phenotype_df = phenotype_df.join(row.astype(float))
     phenotype_df[duration_col] = phenotype_df[duration_col].astype(float)
     phenotype_df[event_col] = phenotype_df[event_col].astype(int)
@@ -120,7 +130,7 @@ def survival_cross_validation(row, phenotype_df, duration_col = 'T', event_col =
     return scores
 
 def metabric_cross_validation(activity_df, metadata_df):
-    metadata_df.loc['E'] = (metadata_df.loc['last_follow_up_status'] == 'd-d.s.')*1
+    metadata_df['E'] = (metadata_df['last_follow_up_status'] == 'd-d.s.')*1
     result = pd.DataFrame(columns=['1','2','3','4','5'])
     for index, row in activity_df.iterrows():
         print("Cox cross validaton: " + str(index)) 
@@ -136,21 +146,26 @@ if __name__ == "__main__":
 
     data = load_metabric(metabric_path)
     expression_df = data.iloc[8:,:]
-    metadata_df = data.iloc[:8,:]
+    metadata_df = data.iloc[:8,:].T
 
     illumina_reactome_df = get_reactome_illumina(illumina2ensembl_path)
 
     activity = porch_metabric(expression_df, illumina_reactome_df)
-    pickle.dump(activity, open("metabric_path_activities.p", "wb"))
+    pickle.dump(activity, open("results/metabric_path_activities.p", "wb"))
 
     survival = metabric_survival(activity.iloc[:,:-2], metadata_df)
-    pickle.dump(survival, open("metabric_path_survival.p", "wb"))
+    pickle.dump(survival, open("results/metabric_path_survival.p", "wb"))
+
+    activity = pickle.load(open("results/metabric_path_activities.p", 'rb'))
+    metadata_df['DiseasesMitoticCellCycle'] = activity.iloc[:,:-2].loc['R-HSA-9675126'].T
+    survival_DiseasesMitoticCellCycle = metabric_survival_control(activity.iloc[:,:-2], metadata_df, 'DiseasesMitoticCellCycle')
+    pickle.dump(survival_DiseasesMitoticCellCycle, open("results/metabric_path_survival_DiseasesMitoticCellCycle.p", "wb"))
 
     survival_genes = metabric_survival(expression_df, metadata_df)
-    pickle.dump(survival_genes, open("metabric_gene_survival.p", "wb"))
+    pickle.dump(survival_genes, open("results/metabric_gene_survival.p", "wb"))
 
     survival_cross_pathways = metabric_cross_validation(activity.iloc[:,:-2], metadata_df)
-    pickle.dump(survival_cross_pathways, open("metabric_path_cross.p", "wb"))
+    pickle.dump(survival_cross_pathways, open("results/metabric_path_cross.p", "wb"))
 
     survival_cross_genes = metabric_cross_validation(expression_df, metadata_df)
-    pickle.dump(survival_cross_genes, open("metabric_path_genes.p", "wb"))
+    pickle.dump(survival_cross_genes, open("results/metabric_genes_cross.p", "wb"))
