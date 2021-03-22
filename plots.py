@@ -62,11 +62,28 @@ if __name__ == "__main__":
                 continue
 
 
-    ## Save the results of the stability check
-    pickle.dump(stability_check_df, open("results/stability_check_df.p", "wb"))
+    stability_check_random_df = pd.DataFrame(columns = ['mean', 'std', 'ngenes'])
+    for pathway in np.unique(illumina_reactome_df['reactome_id']):
+        pathway_data = return_pathway(data, illumina_reactome_df, pathway)
+        ngenes = pathway_data.shape[1]
+        print("Random size " + str(ngenes))
+        random_data = pd.DataFrame(np.random.rand(pathway_data.shape[0], pathway_data.shape[1]))
+        if pathway_data.shape[1] > 1:
+            stability_check_random = check_stability(random_data, nsamples = 10, fraction = 0.2)
+            print(stability_check_random)
+            stability_check_random_df.loc[pathway] = [stability_check_random[0], stability_check_random[1], ngenes]
 
-    ## Load the previously saved results
-    stability_check_df = pickle.load(open('results/stability_check_df.p', 'rb'))
+
+    bins=np.histogram(np.hstack((stability_check_df['mean'],stability_check_random_df['mean'])), bins=50)[1]
+
+    plt.hist(stability_check_df['mean'], bins, density = True, alpha = 0.5)
+    plt.hist(stability_check_random_df['mean'], bins, density=True, alpha = 0.5)
+    plt.legend(['Sampled eigenpatients','Random'])
+    plt.xlabel('Concordance index')
+    plt.ylabel('Density')
+    plt.savefig("plots/stability_vs_random.png", bbox_inches='tight')
+
+
     stability_check_df['p'] = survival['p']
 
 
@@ -202,3 +219,59 @@ if __name__ == "__main__":
     lim = np.min([np.min(cox_results['p']), np.min(cox_results['p_perms'])])
     plt.plot([1,lim],[1,lim], color='r', alpha = 0.5)
     plt.savefig('plots/permutation.png')
+
+    ### correlation plot
+
+    activities = pickle.load(open('results/metabric_path_activities.p', 'rb'))
+    activities = activities.iloc[:,:-2].T
+
+    reactome_id = 'R-HSA-196757'
+
+    metadata = metadata_df
+    reactome_df = illumina_reactome_df
+
+    pathway_data = return_pathway(data, reactome_df, reactome_id)
+    vec, exp = return_PC1(pathway_data)
+    sort_df = pd.DataFrame(vec, index=pathway_data.columns)
+    sort_seq = sort_df.sort_values(0).index.tolist()
+
+    genes = pathway_data.columns
+    pathway_data['T'] = metadata.T['T']
+    pathway_data['E'] = (metadata.T['last_follow_up_status'] != 'a')*1
+    pathway_data['Eigengene'] = activities[reactome_id] 
+
+    pathway_data_dead=pathway_data.where(pathway_data['E'] == 1).dropna()
+
+    #x = preprocessing.PowerTransformer(method='box-cox').fit_transform(pathway_data)
+    x = preprocessing.StandardScaler().fit_transform(pathway_data_dead)
+    pathway_data_dead.loc[:,:] = x
+
+    pathway_data_dead.sort_values(inplace=True,by=['T'])
+    pathway_data_dead = pathway_data_dead[['Eigengene','T']+sort_seq]
+    dictionary_pd = illumina2ensembl_dictionary('../../data/reactome/illumina2hugo.txt'
+            ).set_index('probe')
+    labels_gene = [np.unique(dictionary_pd.loc[x,'gene'])[0] for x in pathway_data_dead.columns if 'ILMN_' in x]
+    pathway_data_dead.columns = [ x for x in pathway_data_dead.columns if 'ILMN_' not in x ] + labels_gene
+    #pathway_data_dead
+    #pathway_data_dead_time = pathway_data_dead.copy()
+
+    pathway_data_dead.rename(columns={"T":"Survival Time"}, inplace=True)
+
+    corr = pathway_data_dead.corr()
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+
+    sns.set_context("talk")
+    f, ax = plt.subplots(figsize=(11, 9))
+
+    # Generate a custom diverging colormap
+    cmap = sns.diverging_palette(230, 20, as_cmap=True)
+
+    # Draw the heatmap with the mask and correct aspect ratio
+    #sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
+    #            square=True, linewidths=.5, cbar_kws={"shrink": .5})
+    sns.heatmap(corr, cmap=cmap, vmax=.3, center=0,
+            square=True, linewidths=.5, cbar_kws={"shrink": .5})
+
+    plt.show()
+
+    f.savefig("plots/R-HSA-196757-Corr.png", bbox_inches='tight')
