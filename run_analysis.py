@@ -145,6 +145,11 @@ if __name__ == "__main__":
     illumina2ensembl_path = 'data/illumina2ensembl.txt'
 
     data = load_metabric(metabric_path)
+
+    duplicates = ["MB-0025", "MB-0196", "MB-0326", "MB-0329", "MB-0330", "MB-0335", "MB-0355", "MB-0407", "MB-0433", "MB-0547", "MB-2720", "MB-6206"]
+
+    data = data.drop(duplicates, axis = 1)
+
     expression_df = data.iloc[8:,:]
     metadata_df = data.iloc[:8,:].T
 
