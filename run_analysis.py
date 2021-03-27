@@ -155,8 +155,10 @@ if __name__ == "__main__":
 
     illumina_reactome_df = get_reactome_illumina(illumina2ensembl_path)
 
-    activity = porch_metabric(expression_df, illumina_reactome_df)
-    pickle.dump(activity, open("results/metabric_path_activities.p", "wb"))
+    # activity = porch_metabric(expression_df, illumina_reactome_df)
+    # pickle.dump(activity, open("results/metabric_path_activities.p", "wb"))
+    activity = pickle.load(open("results/metabric_path_activities.p", "rb"))
+
 
     survival = metabric_survival(activity.iloc[:,:-2], metadata_df)
     pickle.dump(survival, open("results/metabric_path_survival.p", "wb"))
@@ -173,4 +175,4 @@ if __name__ == "__main__":
     pickle.dump(survival_cross_pathways, open("results/metabric_path_cross.p", "wb"))
 
     survival_cross_genes = metabric_cross_validation(expression_df, metadata_df)
-    pickle.dump(survival_cross_genes, open("results/metabric_genes_cross.p", "wb"))
+    pickle.dump(survival_cross_genes, open("results/metabric_gene_cross.p", "wb"))

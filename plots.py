@@ -36,6 +36,11 @@ if __name__ == "__main__":
     illumina2ensembl_path = 'data/illumina2ensembl.txt'
 
     data = load_metabric(metabric_path)
+
+    duplicates = ["MB-0025", "MB-0196", "MB-0326", "MB-0329", "MB-0330", "MB-0335", "MB-0355", "MB-0407", "MB-0433", "MB-0547", "MB-2720", "MB-6206"]
+
+    data = data.drop(duplicates, axis = 1)
+
     expression_df = data.iloc[8:,:]
     metadata_df = data.iloc[:8,:]
 
@@ -95,7 +100,7 @@ if __name__ == "__main__":
     ax.set_yscale('log')
     ax.set_ylabel('Cox p-value')
     ax.set_xlabel('Mean pairwise cosine distance')
-    plt.savefig('plots/stability_p.png')
+    plt.savefig('plots/stability_p.png', bbox_inches='tight')
 
     ## In here we try a new kind of plot to show survival and gene correlation
 
@@ -145,7 +150,7 @@ if __name__ == "__main__":
     chart.set_xticklabels(labels_gene)
 
     plt.tight_layout()
-    plt.savefig('plots/survial_eigenpatient.png') 
+    plt.savefig('plots/survial_eigenpatient.png', bbox_inches='tight') 
 
     #### We compare patways against their most predictive gene
 
@@ -176,7 +181,7 @@ if __name__ == "__main__":
             alpha = 0.5)
     plot.set(xscale = 'log', yscale = 'log', xlabel = 'Pathway $q$ value', ylabel = 'Minimum probe $q$ value')
     plt.plot([1e-21,1], [1e-21,1], linewidth=1, color = 'r')
-    plt.savefig('plots/pathway_gene_q.png')
+    plt.savefig('plots/pathway_gene_q.png', bbox_inches='tight')
 
 
     ### compare concordance indexes
@@ -195,30 +200,8 @@ if __name__ == "__main__":
     plt.legend(['Pathways','Transcripts'])
     plt.xlabel('Concordance Index')
     plt.ylabel('Density')
-    plt.savefig('plots/concodance.png')
+    plt.savefig('plots/concodance.png', bbox_inches='tight')
 
-    #### Permutation test
-
-    permutation_results = pickle.load(open('results/permutation_results.p', 'rb'))
-    cox_results = pickle.load(open('results/metabric_path_survival.p', 'rb'))
-
-    for pathway, row in permutation_results.iterrows():
-        z = np.abs(row['base'])
-        perms = np.abs(row['perms'])
-        num_higher = sum(x >= z for x in perms)
-        p = num_higher/len(perms)
-        cox_results.loc[pathway,'p_perms'] = p
-
-    cox_results = cox_results.dropna()
-
-    plt.scatter(cox_results['p'],cox_results['p_perms'], alpha = 0.5)
-    plt.xlabel('Cox derived p value')
-    plt.ylabel('Permutation derived p value')
-    plt.yscale('log')
-    plt.xscale('log')
-    lim = np.min([np.min(cox_results['p']), np.min(cox_results['p_perms'])])
-    plt.plot([1,lim],[1,lim], color='r', alpha = 0.5)
-    plt.savefig('plots/permutation.png')
 
     ### correlation plot
 
@@ -275,3 +258,28 @@ if __name__ == "__main__":
     plt.show()
 
     f.savefig("plots/R-HSA-196757-Corr.png", bbox_inches='tight')
+
+
+
+    #### Permutation test
+
+    permutation_results = pickle.load(open('results/permutation_results.p', 'rb'))
+    cox_results = pickle.load(open('results/metabric_path_survival.p', 'rb'))
+
+    for pathway, row in permutation_results.iterrows():
+        z = np.abs(row['base'])
+        perms = np.abs(row['perms'])
+        num_higher = sum(x >= z for x in perms)
+        p = num_higher/len(perms)
+        cox_results.loc[pathway,'p_perms'] = p
+
+    cox_results = cox_results.dropna()
+
+    plt.scatter(cox_results['p'],cox_results['p_perms'], alpha = 0.5)
+    plt.xlabel('Cox derived p value')
+    plt.ylabel('Permutation derived p value')
+    plt.yscale('log')
+    plt.xscale('log')
+    lim = np.min([np.min(cox_results['p']), np.min(cox_results['p_perms'])])
+    plt.plot([1,lim],[1,lim], color='r', alpha = 0.5)
+    plt.savefig('plots/permutation.png, bbox_inches='tight'')
