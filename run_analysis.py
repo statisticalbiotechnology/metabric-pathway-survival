@@ -155,15 +155,12 @@ if __name__ == "__main__":
 
     illumina_reactome_df = get_reactome_illumina(illumina2ensembl_path)
 
-    # activity = porch_metabric(expression_df, illumina_reactome_df)
-    # pickle.dump(activity, open("results/metabric_path_activities.p", "wb"))
-    activity = pickle.load(open("results/metabric_path_activities.p", "rb"))
-
+    activity = porch_metabric(expression_df, illumina_reactome_df)
+    pickle.dump(activity, open("results/metabric_path_activities.p", "wb"))
 
     survival = metabric_survival(activity.iloc[:,:-2], metadata_df)
     pickle.dump(survival, open("results/metabric_path_survival.p", "wb"))
 
-    activity = pickle.load(open("results/metabric_path_activities.p", 'rb'))
     metadata_df['DiseasesMitoticCellCycle'] = activity.iloc[:,:-2].loc['R-HSA-9675126'].T
     survival_DiseasesMitoticCellCycle = metabric_survival_control(activity.iloc[:,:-2], metadata_df, 'DiseasesMitoticCellCycle')
     pickle.dump(survival_DiseasesMitoticCellCycle, open("results/metabric_path_survival_DiseasesMitoticCellCycle.p", "wb"))
