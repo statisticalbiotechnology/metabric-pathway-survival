@@ -7,10 +7,11 @@ import pickle
 import qvalue
 
 
-data_path = "../../data/"
-sub_dir = "reactome/74/"
+# data_path = "../../data/"
+# sub_dir = "reactome/74/"
 
-relation_file = data_path + sub_dir + "ReactomePathwaysRelation.txt"
+# relation_file = data_path + sub_dir + "ReactomePathwaysRelation.txt"
+relation_file = "data/ReactomePathwaysRelation.txt"
 
 def generate_tree(relation_file = relation_file):
     
