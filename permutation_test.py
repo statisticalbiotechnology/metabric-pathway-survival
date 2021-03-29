@@ -18,7 +18,7 @@ from run_analysis import load_metabric, illumina2ensembl_dictionary, get_reactom
 
 
 def permute_pathway(activity):
-    shuffle.columns = np.random.permutation(metadata_df.columns) 
+    shuffle.index = np.random.permutation(metadata_df.index) 
     rowresult = porch.survival(activity, shuffle, duration_col = 'T', event_col = 'E')
     return rowresult['coef']
 
@@ -36,15 +36,21 @@ if __name__ == "__main__":
     illumina2ensembl_path = 'data/illumina2ensembl.txt'
 
     data = load_metabric(metabric_path)
-    expression_df = data.iloc[8:,:]
-    metadata_df = data.iloc[:8,:]
-    # reactome_df = get_reactome_illumina(illumina2ensembl_path)
-    activity_df = pickle.load(open('metabric_path_activities.p', 'rb'))
-    activity_df.index = [x.replace('-','_') for x in activity_df.index]
-    survival = pickle.load(open('metabric_path_survival.p', 'rb'))
 
-    metadata_df.loc['E'] = (metadata_df.loc['last_follow_up_status'] == 'd-d.s.')*1
-    shuffle = metadata_df.loc[['E','T']].copy()
+    duplicates = ["MB-0025", "MB-0196", "MB-0326", "MB-0329", "MB-0330", "MB-0335", "MB-0355", "MB-0407", "MB-0433", "MB-0547", "MB-2720", "MB-6206"]
+
+    data = data.drop(duplicates, axis = 1)
+
+    expression_df = data.iloc[8:,:]
+    metadata_df = data.iloc[:8,:].T
+
+    # reactome_df = get_reactome_illumina(illumina2ensembl_path)
+    activity_df = pickle.load(open('results/metabric_path_activities.p', 'rb'))
+    activity_df.index = [x.replace('-','_') for x in activity_df.index]
+    survival = pickle.load(open('results/metabric_path_survival.p', 'rb'))
+
+    metadata_df['E'] = (metadata_df['last_follow_up_status'] == 'd-d.s.')*1
+    shuffle = metadata_df[['E','T']].copy()
 
     num_cores = multiprocessing.cpu_count() - 1
 
@@ -60,7 +66,7 @@ if __name__ == "__main__":
         nearest = np.abs(survival['p'] - p_val).sort_values().index[0]
         activity_row = activity_df.loc[nearest]
 
-        n_pemutation = np.ceil((1/survival.loc[nearest, 'p']) * 10).astype(int)
+        n_pemutation = np.ceil((1/survival.loc[nearest, 'p']) * 100).astype(int)
 
         print('Permutation test for ' + str(nearest) + ', number of permutations:' + str(n_pemutation))
         perm_results = parallel_permutations(activity_row, metadata_df, n_pemutation, num_cores=num_cores)
