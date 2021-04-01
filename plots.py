@@ -252,7 +252,7 @@ if __name__ == "__main__":
     # Draw the heatmap with the mask and correct aspect ratio
     #sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
     #            square=True, linewidths=.5, cbar_kws={"shrink": .5})
-    sns.heatmap(corr, cmap=cmap, vmax=.3, center=0,
+    sns.heatmap(corr, cmap=cmap, center=0,
             square=True, linewidths=.5, cbar_kws={"shrink": .5})
 
     plt.show()
