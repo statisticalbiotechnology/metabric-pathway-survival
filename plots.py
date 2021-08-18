@@ -84,7 +84,7 @@ if __name__ == "__main__":
     plt.hist(stability_check_df['mean'], bins, density = True, alpha = 0.5)
     plt.hist(stability_check_random_df['mean'], bins, density=True, alpha = 0.5)
     plt.legend(['Sampled eigenpatients','Random'])
-    plt.xlabel('Concordance index')
+    plt.xlabel('Mean pairwise cosine distance')
     plt.ylabel('Density')
     plt.savefig("plots/stability_vs_random.png", bbox_inches='tight')
 
@@ -188,20 +188,33 @@ if __name__ == "__main__":
 
     survival_cross_pathways = pickle.load(open('results/metabric_path_cross.p', 'rb'))
     survival_cross_genes = pickle.load(open('results/metabric_gene_cross.p', 'rb'))
+    ssgsea_cross = pickle.load(open('results/ssgsea_cross.p', 'rb'))
 
 
     survival_cross_pathways['mean'] = np.mean(survival_cross_pathways.values, axis=1)
     survival_cross_genes['mean'] = np.mean(survival_cross_genes.values, axis=1)
+    ssgsea_cross['mean'] = np.mean(ssgsea_cross.values, axis=1)
 
-    bins=np.histogram(np.hstack((survival_cross_genes['mean'],survival_cross_pathways['mean'])), bins=50)[1]
+    bins=np.histogram(np.hstack((survival_cross_genes['mean'],survival_cross_pathways['mean'],ssgsea_cross['mean'])), bins=50)[1]
 
-    plt.hist(survival_cross_pathways['mean'], bins, density = True, alpha = 0.5)
-    plt.hist(survival_cross_genes['mean'], bins, density=True, alpha = 0.5)
-    plt.legend(['Pathways','Transcripts'])
+    # fig, (ax1,ax2) = plt.subplots(2,1, sharey=True, sharex=True, figsize=(7,10))
+
+
+    plt.hist(survival_cross_pathways['mean'], bins, density = True, alpha = 0.5, histtype='step', fill=True)
+    plt.hist(survival_cross_genes['mean'], bins, density=True, alpha = 0.5, histtype='step', fill=True)
+    plt.legend(['Eigengenes','Transcripts'])
     plt.xlabel('Concordance Index')
     plt.ylabel('Density')
-    plt.savefig('plots/concodance.png', bbox_inches='tight')
 
+    plt.savefig('plots/concordance_A.png', bbox_inches='tight')
+
+    plt.hist(survival_cross_pathways['mean'], bins, density = True, alpha = 0.5, histtype='step', fill=True)
+    plt.hist(ssgsea_cross['mean'], bins, density=True, alpha = 0.5, histtype='step', fill=True)
+    plt.legend(['Eigengenes','ssGSEA'])
+    plt.xlabel('Concordance Index')
+    plt.ylabel('Density')
+
+    plt.savefig('plots/concordance_B.png', bbox_inches='tight')
 
     ### correlation plot
 
