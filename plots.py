@@ -296,3 +296,30 @@ if __name__ == "__main__":
     # lim = np.min([np.min(cox_results['p']), np.min(cox_results['p_perms'])])
     # plt.plot([1,lim],[1,lim], color='r', alpha = 0.5)
     # plt.savefig('plots/permutation.png, bbox_inches='tight'')
+
+
+    #### We compare patways against their most predictive gene
+
+    compare_df = pd.DataFrame(index = survival_cross_pathways.index, columns = ['path','probes_max', 'probes_mean', 'probes_median','ngenes'])
+    for path in survival_cross_pathways.index:
+        print('Compare ' + path)
+        genes = return_pathway(survival_cross_genes,illumina_reactome_df,path).T
+        mean_genes = np.mean(genes, axis=1)
+        ngenes = genes.shape[0]
+        compare_df.loc[path] = [np.mean(survival_cross_pathways.loc[path]), np.max(mean_genes),np.mean(mean_genes), np.median(mean_genes), ngenes]
+
+
+    fig, (ax1,ax2) = plt.subplots(1,2, sharey=True, sharex=True, figsize=(10,4))
+    sns.scatterplot(ax=ax1, y = compare_df['path'],
+            x = compare_df['probes_mean'],
+            alpha = 1, s=5)
+    ax1.set(ylabel = 'Pathway C-index', xlabel = 'Average transcript C-index')
+    ax1.plot([0.45,0.67], [0.45,0.67], linewidth=1, color = 'r')
+
+    sns.scatterplot(ax=ax2, y = compare_df['path'],
+            x = compare_df['probes_max'],
+            alpha = 1, s=5)
+    ax2.set(ylabel = 'Pathway C-index', xlabel = 'Best transcript C-index')
+    ax2.plot([0.45,0.67], [0.45,0.67], linewidth=1, color = 'r')
+
+    fig.savefig('plots/pathway_gene_C-index.png', bbox_inches='tight')
