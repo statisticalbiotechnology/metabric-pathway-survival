@@ -323,3 +323,22 @@ if __name__ == "__main__":
     ax2.plot([0.45,0.67], [0.45,0.67], linewidth=1, color = 'r')
 
     fig.savefig('plots/pathway_gene_C-index.png', bbox_inches='tight')
+
+    #######
+
+    path_c = pickle.load(open('results/metabric_path_cross.p', 'rb'))
+    gene_c = pickle.load(open('results/metabric_gene_cross.p', 'rb'))
+
+    gene_lists = illumina_reactome_df.groupby('reactome_id')['probe'].unique()
+
+    path_c['mean'] = np.mean(path_c, axis=1)
+    gene_c['mean'] = np.mean(gene_c, axis=1)
+
+    n=50
+
+    top_paths = path_c.sort_values('mean', ascending=False).head(n).index
+    top_genes = gene_c.sort_values('mean', ascending=False).head(n).index
+
+    top_path_genes = np.unique(np.concatenate(gene_lists[top_paths].values))
+
+    len([x for x in top_genes if x in top_path_genes])
