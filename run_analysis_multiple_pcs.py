@@ -202,6 +202,117 @@ def metabric_cross_validation_npcs(activity_df, metadata_df):
     return result
 
 
+def metabric_survival_npcs(activity_df, metadata_df):
+    metadata_df['E'] = (metadata_df['last_follow_up_status'] == 'd-d.s.')*1
+    result = pd.DataFrame()
+    for index, row in activity_df.iterrows():
+        print("Cox's regression: " + str(index))
+        rowresult = survival_npcs(row, metadata_df, duration_col = 'T', event_col = 'E')
+        result = result.append(rowresult)
+    return result
+
+
+def metabric_survival_control_npcs(activity_df, metadata_df, control):
+    metadata_df['E'] = (metadata_df['last_follow_up_status'] == 'd-d.s.')*1
+    metadata_df[control] = metadata_df[control].astype(float)
+    result = pd.DataFrame()
+    for index, row in activity_df.iterrows():
+        print("Cox's regression: " + str(index) + ", controlled for " + control)
+        try:
+            rowresult = survival_npcs(row, metadata_df, duration_col = 'T', event_col = 'E', other_cols=[control])
+            result = result.append(rowresult)
+        except:
+            continue
+            # rowresult = pd.Series(np.repeat(1,10), index=rowresult.index, name=index)
+        # result = result.append(rowresult)
+    return result
+
+
+
+def survival_npcs(row, phenotype_df, duration_col = 'T', event_col = 'E', other_cols = []):
+    """
+    duration_col: survival time
+    event_col: whether an event (death or other) has ocured or not. 0 for no, 1 for yes
+    other_cols: other variables to consider in the regression
+    """
+
+    row.name = row.name.replace(' ','_').replace('.','_').replace('-','_')
+    row_npcs = row
+    columns_names = []
+    formula = ''
+    for n in range(len(row_npcs[0])):
+        pc_name = row.name + '_pc' + str(n+1)
+        columns_names.append(pc_name)
+        formula = formula + pc_name + ' + '
+
+    row_npcs = pd.DataFrame(row_npcs.tolist(), index = row_npcs.index)
+    row_npcs.columns = columns_names
+
+    # phenotype_df = phenotype_df.join(row.astype(float))
+    phenotype_df = phenotype_df.join(row_npcs.astype(float))
+
+    phenotype_df[duration_col] = phenotype_df[duration_col].astype(float)
+    phenotype_df[event_col] = phenotype_df[event_col].astype(int)
+
+    # The following lines deal with char conflicts in patsy formulas
+    duration_col = duration_col.replace(' ','_').replace('.','_').replace('-','_')
+    event_col = event_col.replace(' ','_').replace('.','_').replace('-','_')
+    other_cols = [x.replace(' ','_').replace('.','_').replace('-','_') for x in other_cols]
+    # row.name = row.name.replace(' ','_').replace('.','_').replace('-','_')
+    phenotype_df.columns = [x.replace(' ','_').replace('.','_').replace('-','_') for x in phenotype_df.columns]
+
+    # formula = row.name + ' + ' + duration_col + ' + ' + event_col
+    formula = formula + duration_col + ' + ' + event_col
+    if not not other_cols:
+        other_cols = [x.replace(' ','_').replace('.','_') for x in other_cols]
+        formula = formula + ' + ' + ' + '.join(other_cols)
+
+    X = patsy.dmatrix(formula_like = formula, data = phenotype_df, return_type = 'dataframe')
+    X = X.drop(['Intercept'], axis = 1)
+    cph = lifelines.CoxPHFitter()
+    cph.fit(X, duration_col = duration_col, event_col = event_col)
+    result = cph.summary.loc[columns_names]
+    return result
+
+def metabric_survival_npcs_sep(activity_df, metadata_df):
+    metadata_df['E'] = (metadata_df['last_follow_up_status'] == 'd-d.s.')*1
+    result = pd.DataFrame()
+    for index, row in activity_df.iterrows():
+        for n in range(len(row[0])):
+            row_sep = pd.Series([x[n] for x in row], name = row.name + '_pc' + str(n+1), index = row.index)
+            print("Cox's regression: " + str(row_sep.name))
+            rowresult = psurvival(row_sep, metadata_df, duration_col = 'T', event_col = 'E')
+            result = result.append(rowresult)
+    return result
+
+def psurvival(row, phenotype_df, duration_col = 'T', event_col = 'E', other_cols = []):
+    """
+    duration_col: survival time
+    event_col: whether an event (death or other) has ocured or not. 0 for no, 1 for yes
+    other_cols: other variables to consider in the regression
+    """
+    # phenotype_df = phenotype_df.T
+    phenotype_df = phenotype_df.join(row.astype(float))
+    phenotype_df[duration_col] = phenotype_df[duration_col].astype(float)
+    phenotype_df[event_col] = phenotype_df[event_col].astype(int)
+
+    # The following lines deal with char conflicts in patsy formulas
+    duration_col = duration_col.replace(' ','_').replace('.','_').replace('-','_')
+    event_col = event_col.replace(' ','_').replace('.','_').replace('-','_')
+    other_cols = [x.replace(' ','_').replace('.','_').replace('-','_') for x in other_cols]
+    row.name = row.name.replace(' ','_').replace('.','_').replace('-','_')
+    phenotype_df.columns = [x.replace(' ','_').replace('.','_').replace('-','_') for x in phenotype_df.columns]
+
+    formula = row.name + ' + ' + duration_col + ' + ' + event_col
+    if not not other_cols:
+        other_cols = [x.replace(' ','_').replace('.','_') for x in other_cols]
+        formula = formula + ' + ' + ' + '.join(other_cols)
+    X = patsy.dmatrix(formula_like = formula, data = phenotype_df, return_type = 'dataframe')
+    X = X.drop(['Intercept'], axis = 1)
+    cph = lifelines.CoxPHFitter()
+    cph.fit(X, duration_col = duration_col, event_col = event_col)
+    result = cph.summary.loc[row.name]
+    return result
 
 
 
@@ -244,5 +355,105 @@ illumina_reactome_df = get_reactome_illumina(illumina2ensembl_path)
 activity_2 = porch_metabric_npcs(2, expression_df, illumina_reactome_df)
 pickle.dump(activity_2, open("results/metabric_path_activities_2pcs.p", "wb"))
 
+activity_3 = porch_metabric_npcs(3, expression_df, illumina_reactome_df)
+pickle.dump(activity_3, open("results/metabric_path_activities_3pcs.p", "wb"))
+
+activity_4 = porch_metabric_npcs(4, expression_df, illumina_reactome_df)
+pickle.dump(activity_4, open("results/metabric_path_activities_4pcs.p", "wb"))
+
+activity_5 = porch_metabric_npcs(5, expression_df, illumina_reactome_df)
+pickle.dump(activity_5, open("results/metabric_path_activities_5pcs.p", "wb"))
+
+activity_10 = porch_metabric_npcs(10, expression_df, illumina_reactome_df)
+pickle.dump(activity_10, open("results/metabric_path_activities_10pcs.p", "wb"))
+
+activity_50 = porch_metabric_npcs(50, expression_df, illumina_reactome_df)
+pickle.dump(activity_50, open("results/metabric_path_activities_50pcs.p", "wb"))
+
+activity_100 = porch_metabric_npcs(100, expression_df, illumina_reactome_df)
+pickle.dump(activity_100, open("results/metabric_path_activities_100pcs.p", "wb"))
+
+
+activity = pickle.load(open('results/metabric_path_activities.p', 'rb'))
+activity_2 = pickle.load(open('results/metabric_path_activities_2pcs.p', 'rb'))
+activity_3 = pickle.load(open('results/metabric_path_activities_3pcs.p', 'rb'))
+activity_4 = pickle.load(open('results/metabric_path_activities_4pcs.p', 'rb'))
+activity_5 = pickle.load(open('results/metabric_path_activities_5pcs.p', 'rb'))
+activity_10 = pickle.load(open('results/metabric_path_activities_10pcs.p', 'rb'))
+activity_50 = pickle.load(open('results/metabric_path_activities_50pcs.p', 'rb'))
+activity_100 = pickle.load(open('results/metabric_path_activities_100pcs.p', 'rb'))
+
+survival_2 = metabric_survival_npcs(activity_2.iloc[:,:-2], metadata_df)
+pickle.dump(survival_2, open("results/metabric_path_survival_2pcs.p", "wb"))
+
+survival_3 = metabric_survival_npcs(activity_3.iloc[:,:-2], metadata_df)
+pickle.dump(survival_3, open("results/metabric_path_survival_3pcs.p", "wb"))
+
+survival_4 = metabric_survival_npcs(activity_4.iloc[:,:-2], metadata_df)
+pickle.dump(survival_4, open("results/metabric_path_survival_4pcs.p", "wb"))
+
+survival_5 = metabric_survival_npcs(activity_5.iloc[:,:-2], metadata_df)
+pickle.dump(survival_5, open("results/metabric_path_survival_5pcs.p", "wb"))
+
+survival_10 = metabric_survival_npcs(activity_10.iloc[:,:-2], metadata_df)
+pickle.dump(survival_10, open("results/metabric_path_survival_10pcs.p", "wb"))
+
+survival_50 = metabric_survival_npcs(activity_50.iloc[:,:-2], metadata_df)
+pickle.dump(survival_50, open("results/metabric_path_survival_50pcs.p", "wb"))
+
+survival_100 = metabric_survival_npcs(activity_100.iloc[:,:-2], metadata_df)
+pickle.dump(survival_100, open("results/metabric_path_survival_100pcs.p", "wb"))
+
+
 survival_cross_pathways_2 = metabric_cross_validation_npcs(activity_2.iloc[:,:-2], metadata_df)
 pickle.dump(survival_cross_pathways_2, open("results/metabric_path_cross_2pcs.p", "wb"))
+
+survival_cross_pathways_3 = metabric_cross_validation_npcs(activity_3.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_3, open("results/metabric_path_cross_3pcs.p", "wb"))
+
+survival_cross_pathways_4 = metabric_cross_validation_npcs(activity_4.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_4, open("results/metabric_path_cross_4pcs.p", "wb"))
+
+survival_cross_pathways_5 = metabric_cross_validation_npcs(activity_5.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_5, open("results/metabric_path_cross_5pcs.p", "wb"))
+
+survival_cross_pathways_10 = metabric_cross_validation_npcs(activity_10.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_10, open("results/metabric_path_cross_10pcs.p", "wb"))
+
+survival_cross_pathways_50 = metabric_cross_validation_npcs(activity_50.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_50, open("results/metabric_path_cross_50pcs.p", "wb"))
+
+survival_cross_pathways_100 = metabric_cross_validation_npcs(activity_100.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_100, open("results/metabric_path_cross_100pcs.p", "wb"))
+
+
+
+survival_2_sep = metabric_survival_npcs_sep(activity_2.iloc[:,:-2], metadata_df)
+pickle.dump(survival_2_sep, open("results/metabric_path_survival_2pcs_sep.p", "wb"))
+
+survival_3_sep = metabric_survival_npcs_sep(activity_3.iloc[:,:-2], metadata_df)
+pickle.dump(survival_3_sep, open("results/metabric_path_survival_3pcs_sep.p", "wb"))
+
+survival_4_sep = metabric_survival_npcs_sep(activity_4.iloc[:,:-2], metadata_df)
+pickle.dump(survival_4_sep, open("results/metabric_path_survival_4pcs_sep.p", "wb"))
+
+survival_5_sep = metabric_survival_npcs_sep(activity_5.iloc[:,:-2], metadata_df)
+pickle.dump(survival_5_sep, open("results/metabric_path_survival_5pcs_sep.p", "wb"))
+
+#######
+
+metadata_df['DiseasesMitoticCellCycle'] = activity.iloc[:,:-2].loc['R-HSA-9675126'].T
+
+survival_DiseasesMitoticCellCycle_2 = metabric_survival_control_npcs(activity_2.iloc[:,:-2], metadata_df, 'DiseasesMitoticCellCycle')
+pickle.dump(survival_DiseasesMitoticCellCycle_2, open("results/metabric_path_survival_DiseasesMitoticCellCycle_2pcs.p", "wb"))
+
+survival_DiseasesMitoticCellCycle_3 = metabric_survival_control_npcs(activity_3.iloc[:,:-2], metadata_df, 'DiseasesMitoticCellCycle')
+pickle.dump(survival_DiseasesMitoticCellCycle_3, open("results/metabric_path_survival_DiseasesMitoticCellCycle_3pcs.p", "wb"))
+
+survival_DiseasesMitoticCellCycle_4 = metabric_survival_control_npcs(activity_4.iloc[:,:-2], metadata_df, 'DiseasesMitoticCellCycle')
+pickle.dump(survival_DiseasesMitoticCellCycle_4, open("results/metabric_path_survival_DiseasesMitoticCellCycle_4pcs.p", "wb"))
+
+survival_DiseasesMitoticCellCycle_5 = metabric_survival_control_npcs(activity_5.iloc[:,:-2], metadata_df, 'DiseasesMitoticCellCycle')
+pickle.dump(survival_DiseasesMitoticCellCycle_5, open("results/metabric_path_survival_DiseasesMitoticCellCycle_5pcs.p", "wb"))
+
+
