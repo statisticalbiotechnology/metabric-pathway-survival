@@ -62,6 +62,7 @@ plt.show()
 #######
 
 survival_genes = pickle.load(open('results/metabric_gene_survival.p', 'rb'))
+survival_ssgsea = pickle.load(open('results/ssgsea_survival.p', 'rb'))
 survival = pickle.load(open('results/metabric_path_survival.p', 'rb'))
 survival_2 = pickle.load(open('results/metabric_path_survival_2pcs.p', 'rb'))
 survival_3 = pickle.load(open('results/metabric_path_survival_3pcs.p', 'rb'))
@@ -130,6 +131,7 @@ plt.show()
 
 
 survival_genes['q'] = qvalue.qvalues(pd.DataFrame(survival_genes['p']))['q']
+survival_ssgsea['q'] = qvalue.qvalues(pd.DataFrame(survival_ssgsea['p']))['q']
 survival['q'] = qvalue.qvalues(pd.DataFrame(survival['p']))['q']
 survival_2['q'] = qvalue.qvalues(pd.DataFrame(survival_2['p']))['q']
 survival_3['q'] = qvalue.qvalues(pd.DataFrame(survival_3['p']))['q']
@@ -138,6 +140,7 @@ survival_5['q'] = qvalue.qvalues(pd.DataFrame(survival_5['p']))['q']
 
 
 survival_genes = survival_genes.sort_values('p')
+survival_ssgsea = survival_ssgsea.sort_values('p')
 survival = survival.sort_values('p')
 survival_2 = survival_2.sort_values('p')
 survival_3 = survival_3.sort_values('p')
@@ -145,6 +148,7 @@ survival_4 = survival_4.sort_values('p')
 survival_5 = survival_5.sort_values('p')
 
 survival_genes['frac'] = np.arange(1,len(survival_genes['p'])+1)/len(survival_genes['p'])
+survival_ssgsea['frac'] = np.arange(1,len(survival_ssgsea['p'])+1)/len(survival_ssgsea['p'])
 survival['frac'] = np.arange(1,len(survival['p'])+1)/len(survival['p'])
 survival_2['frac'] = np.arange(1,len(survival_2['p'])+1)/len(survival_2['p'])
 survival_3['frac'] = np.arange(1,len(survival_3['p'])+1)/len(survival_3['p'])
@@ -152,9 +156,17 @@ survival_4['frac'] = np.arange(1,len(survival_4['p'])+1)/len(survival_4['p'])
 survival_5['frac'] = np.arange(1,len(survival_5['p'])+1)/len(survival_5['p'])
 
 
+survival = survival.loc[survival['q'] <= 0.1]
+survival_2 = survival_2.loc[survival_2['q'] <= 0.1]
+survival_3 = survival_3.loc[survival_3['q'] <= 0.1]
+survival_4 = survival_4.loc[survival_4['q'] <= 0.1]
+survival_5 = survival_5.loc[survival_5['q'] <= 0.1]
+
+
 sns.set_context('talk')
 plt.figure(figsize=(10, 8))
 sns.lineplot(x='q', y='frac', data = survival)
+sns.lineplot(x='q', y='frac', data = survival_ssgsea)
 sns.lineplot(x='q', y='frac', data = survival_2)
 sns.lineplot(x='q', y='frac', data = survival_3)
 sns.lineplot(x='q', y='frac', data = survival_4)
@@ -163,8 +175,11 @@ sns.lineplot(x='q', y='frac', data = survival_genes)
 
 
 plt.legend(['1','2','3', '4', '5', 'Transcripts'])
+plt.legend(['1','2','3', '4', '5'])
+plt.legend(['Eigengene','ssGESEA'])
 plt.xlabel('q value')
 plt.ylabel('Fraction below threshold')
+plt.title('A')
 
 plt.savefig('p_q_multiple_sv.png')
 plt.show()
@@ -196,6 +211,12 @@ survival_3['frac'] = np.arange(1,len(survival_3['p'])+1)/len(survival_3['p'])
 survival_4['frac'] = np.arange(1,len(survival_4['p'])+1)/len(survival_4['p'])
 survival_5['frac'] = np.arange(1,len(survival_5['p'])+1)/len(survival_5['p'])
 
+survival = survival.loc[survival['q'] <= 0.1]
+survival_2 = survival_2.loc[survival_2['q'] <= 0.1]
+survival_3 = survival_3.loc[survival_3['q'] <= 0.1]
+survival_4 = survival_4.loc[survival_4['q'] <= 0.1]
+survival_5 = survival_5.loc[survival_5['q'] <= 0.1]
+
 
 plt.figure(figsize=(10, 8))
 sns.set_context('talk')
@@ -210,7 +231,9 @@ plt.legend(['1','2','3', '4', '5'])
 plt.xlabel('q value')
 plt.ylabel('Fraction below threshold')
 plt.title('Controled for Diseases of Mitotic Cell Cycle')
+plt.title('B')
 
+plt.xlim([None,0.1])
 plt.savefig('p_q_multiple_sv_controlled.png')
 plt.show()
 
