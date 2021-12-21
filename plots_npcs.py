@@ -181,6 +181,7 @@ plt.xlabel('q value')
 plt.ylabel('Fraction below threshold')
 plt.title('A')
 
+plt.xlim([None,0.1])
 plt.savefig('p_q_multiple_sv.png')
 plt.show()
 
