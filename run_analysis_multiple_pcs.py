@@ -315,6 +315,19 @@ def psurvival(row, phenotype_df, duration_col = 'T', event_col = 'E', other_cols
     return result
 
 
+def metabric_cross_validation_npcs_sep(activity_df, metadata_df):
+    metadata_df['E'] = (metadata_df['last_follow_up_status'] == 'd-d.s.')*1
+    # result = pd.DataFrame()
+    result = pd.DataFrame(columns=['1','2','3','4','5'])
+    for index, row in activity_df.iterrows():
+        for n in range(len(row[0])):
+            row_sep = pd.Series([x[n] for x in row], name = row.name + '_pc' + str(n+1), index = row.index)
+            print("Cross validation: " + str(row_sep.name))
+            # rowresult = psurvival(row_sep, metadata_df, duration_col = 'T', event_col = 'E')
+            rowresult = survival_cross_validation(row_sep, metadata_df, duration_col = 'T', event_col = 'E')
+            result.loc[row_sep.name] = rowresult
+    return result
+
 
 
 if __name__ == "__main__":
@@ -375,10 +388,10 @@ pickle.dump(activity_100, open("results/metabric_path_activities_100pcs.p", "wb"
 
 
 activity = pickle.load(open('results/metabric_path_activities.p', 'rb'))
-activity_2 = pickle.load(open('results/metabric_path_activities_2pcs.p', 'rb'))
-activity_3 = pickle.load(open('results/metabric_path_activities_3pcs.p', 'rb'))
-activity_4 = pickle.load(open('results/metabric_path_activities_4pcs.p', 'rb'))
-activity_5 = pickle.load(open('results/metabric_path_activities_5pcs.p', 'rb'))
+activity_2 = pickle.load(open('results/bolt/metabric_path_activities_2pcs.p', 'rb'))
+activity_3 = pickle.load(open('results/bolt/metabric_path_activities_3pcs.p', 'rb'))
+activity_4 = pickle.load(open('results/bolt/metabric_path_activities_4pcs.p', 'rb'))
+activity_5 = pickle.load(open('results/bolt/metabric_path_activities_5pcs.p', 'rb'))
 activity_10 = pickle.load(open('results/metabric_path_activities_10pcs.p', 'rb'))
 activity_50 = pickle.load(open('results/metabric_path_activities_50pcs.p', 'rb'))
 activity_100 = pickle.load(open('results/metabric_path_activities_100pcs.p', 'rb'))
@@ -439,6 +452,21 @@ pickle.dump(survival_4_sep, open("results/metabric_path_survival_4pcs_sep.p", "w
 
 survival_5_sep = metabric_survival_npcs_sep(activity_5.iloc[:,:-2], metadata_df)
 pickle.dump(survival_5_sep, open("results/metabric_path_survival_5pcs_sep.p", "wb"))
+
+#######
+
+
+survival_cross_pathways_2_sep = metabric_cross_validation_npcs_sep(activity_2.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_2_sep, open("results/metabric_path_cross_2pcs_sep.p", "wb"))
+
+survival_cross_pathways_3_sep = metabric_cross_validation_npcs(activity_3.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_3_sep, open("results/metabric_path_cross_3pcs_sep.p", "wb"))
+
+survival_cross_pathways_4_sep = metabric_cross_validation_npcs_sep(activity_4.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_4_sep, open("results/metabric_path_cross_4pcs_sep.p", "wb"))
+
+survival_cross_pathways_5_sep = metabric_cross_validation_npcs_sep(activity_5.iloc[:,:-2], metadata_df)
+pickle.dump(survival_cross_pathways_5_sep, open("results/metabric_path_cross_5pcs_sep.p", "wb"))
 
 #######
 

@@ -6,12 +6,12 @@ import pickle
 
 from porch_npcs import qvalue
 
-survival_cross_genes = pickle.load(open('results/metabric_gene_cross.p', 'rb'))
-survival_cross_pathways = pickle.load(open('results/metabric_path_cross.p', 'rb'))
-survival_cross_pathways_2 = pickle.load(open('results/metabric_path_cross_2pcs.p', 'rb'))
-survival_cross_pathways_3 = pickle.load(open('results/metabric_path_cross_3pcs.p', 'rb'))
-survival_cross_pathways_4 = pickle.load(open('results/metabric_path_cross_4pcs.p', 'rb'))
-survival_cross_pathways_5 = pickle.load(open('results/metabric_path_cross_5pcs.p', 'rb'))
+survival_cross_genes = pickle.load(open('results/bolt/metabric_gene_cross.p', 'rb'))
+survival_cross_pathways = pickle.load(open('results/bolt/metabric_path_cross.p', 'rb'))
+survival_cross_pathways_2 = pickle.load(open('results/bolt/metabric_path_cross_2pcs.p', 'rb'))
+survival_cross_pathways_3 = pickle.load(open('results/bolt/metabric_path_cross_3pcs.p', 'rb'))
+survival_cross_pathways_4 = pickle.load(open('results/bolt/metabric_path_cross_4pcs.p', 'rb'))
+survival_cross_pathways_5 = pickle.load(open('results/bolt/metabric_path_cross_5pcs.p', 'rb'))
 survival_cross_pathways_10 = pickle.load(open('results/metabric_path_cross_10pcs.p', 'rb'))
 survival_cross_pathways_50 = pickle.load(open('results/metabric_path_cross_50pcs.p', 'rb'))
 survival_cross_pathways_100 = pickle.load(open('results/metabric_path_cross_100pcs.p', 'rb'))
@@ -51,13 +51,27 @@ plt.hist(survival_cross_pathways_5['mean'], bins, density=True, alpha = 0.5, his
 plt.hist(survival_cross_pathways_10['mean'], bins, density=True, alpha = 0.5, histtype='step', fill=False)
 plt.hist(survival_cross_pathways_50['mean'], bins, density=True, alpha = 0.5, histtype='step', fill=False)
 plt.hist(survival_cross_pathways_100['mean'], bins, density=True, alpha = 0.5, histtype='step', fill=False)
-plt.legend(['Transcripts','1sv','2sv','4sv', '50sv'])
+plt.legend(['Transcripts','1sv','2sv','4sv', '50sv'], loc = 'upper left')
 plt.xlabel('Concordance Index')
 plt.ylabel('Density')
 
 plt.show()
 
+sns.set_context('talk')
+plt.figure(figsize=(10, 8))
 
+sns.histplot(data = survival_cross_pathways['mean'], bins = bins, stat = 'density', element='step', fill=False)
+sns.histplot(data = survival_cross_pathways_2['mean'], bins = bins, stat = 'density', element='step', fill=False)
+sns.histplot(data = survival_cross_pathways_3['mean'], bins = bins, stat = 'density', element='step', fill=False)
+sns.histplot(data = survival_cross_pathways_4['mean'], bins = bins, stat = 'density', element='step', fill=False)
+sns.histplot(data = survival_cross_pathways_5['mean'], bins = bins, stat = 'density', element='step', fill=False)
+
+plt.legend(['1sv','2sv','5sv'], loc = 'upper left')
+plt.xlabel('Concordance Index')
+plt.ylabel('Density')
+
+plt.savefig('cross_npc.png')
+plt.show()
 
 #######
 
@@ -238,7 +252,44 @@ plt.xlim([None,0.1])
 plt.savefig('p_q_multiple_sv_controlled.png')
 plt.show()
 
+###############
+
+survival_cross_sep = pickle.load(open('results/metabric_path_cross_5pcs_sep.p', 'rb'))
 
 
+survival_cross_sep['mean'] = np.mean(survival_cross_sep.values, axis=1)
+
+survival_cross_pathways = survival_cross_sep.loc[[x for x in survival_cross_sep.index if x.endswith(('1'))]]
+survival_cross_pathways_2 = survival_cross_sep.loc[[x for x in survival_cross_sep.index if x.endswith(('1', '2'))]]
+survival_cross_pathways_3 = survival_cross_sep.loc[[x for x in survival_cross_sep.index if x.endswith(('1', '2', '3'))]]
+survival_cross_pathways_4 = survival_cross_sep.loc[[x for x in survival_cross_sep.index if x.endswith(('1', '2', '3', '4'))]]
+survival_cross_pathways_5 = survival_cross_sep.loc[[x for x in survival_cross_sep.index if x.endswith(('1', '2', '3', '4', '5'))]]
+
+
+
+bins=np.histogram(np.hstack((
+    survival_cross_pathways['mean'], 
+    survival_cross_pathways_2['mean'],
+    survival_cross_pathways_3['mean'],
+    survival_cross_pathways_4['mean'],
+    survival_cross_pathways_5['mean'], 
+    )), bins=50)[1]
+
+
+sns.set_context('talk')
+plt.figure(figsize=(10, 8))
+
+sns.histplot(data = survival_cross_pathways['mean'], bins = bins, stat = 'density', element='step', fill=False)
+sns.histplot(data = survival_cross_pathways_2['mean'], bins = bins, stat = 'density', element='step', fill=False)
+sns.histplot(data = survival_cross_pathways_3['mean'], bins = bins, stat = 'density', element='step', fill=False)
+sns.histplot(data = survival_cross_pathways_4['mean'], bins = bins, stat = 'density', element='step', fill=False)
+sns.histplot(data = survival_cross_pathways_5['mean'], bins = bins, stat = 'density', element='step', fill=False)
+
+plt.legend(['1sv','2sv','5sv'], loc = 'upper left')
+plt.xlabel('Concordance Index')
+plt.ylabel('Density')
+
+plt.savefig('cross_npc_sep.png')
+plt.show()
 
 
