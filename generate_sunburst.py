@@ -51,7 +51,7 @@ def sunburst(in_df, outname = 'sun_tree.json'):
 
     topPaths = rel_df.loc[(rel_df['parentId'] == 'HomoSapiens'), 'id']
     homoNgenes = np.sum(in_df.loc[[x in topPaths.tolist() for x in in_df.index],'ngenes'])
-    homoNode = pd.DataFrame([[1,homoNgenes,"Homo Sapiens"]], columns = ["q", "ngenes", "description"]).xs(0)
+    homoNode = pd.DataFrame([[1,homoNgenes,"Homo Sapiens"]], columns = ["value", "ngenes", "description"]).xs(0)
     homoNode.name = 'HomoSapiens'
 
     in_df = in_df.append(homoNode)
@@ -76,7 +76,7 @@ def sunburst(in_df, outname = 'sun_tree.json'):
     
     thirdDict = {'value':{}, 'ngenes':{}, 'description': {}, 'timelineHigh': {},'timelineLow': {}, 'high': {}, 'low': {}}
     for key, value in secondDict.items():
-        thirdDict['value'].update({key : topDict['q'][value]})
+        thirdDict['value'].update({key : topDict['value'][value]})
         thirdDict['ngenes'].update({key : topDict['ngenes'][value]})
         thirdDict['description'].update({key : topDict['description'][value]})
 
@@ -95,9 +95,9 @@ if __name__ == "__main__":
     survival = pickle.load(open('results/metabric_path_survival.p', 'rb'))
     survival.index = [x.replace('_','-') for x in survival.index]
     activities = pickle.load(open('results/metabric_path_activities.p', 'rb'))
-    survival['q'] = qvalue.qvalues(survival)
+    survival['value'] = qvalue.qvalues(survival)
 
-    in_df = pd.DataFrame(survival['q'])
+    in_df = pd.DataFrame(survival['value'])
     in_df['ngenes'] = activities['set_size'].astype(int)
     in_df['description'] = activities['annotation']
     in_df = in_df.dropna()
@@ -107,9 +107,9 @@ if __name__ == "__main__":
     survival = pickle.load(open('results/metabric_path_survival_DiseasesMitoticCellCycle.p', 'rb'))
     survival.index = [x.replace('_','-') for x in survival.index]
     activities = pickle.load(open('results/metabric_path_activities.p', 'rb'))
-    survival['q'] = qvalue.qvalues(survival)
+    survival['value'] = qvalue.qvalues(survival)
 
-    in_df = pd.DataFrame(survival['q'])
+    in_df = pd.DataFrame(survival['value'])
     in_df['ngenes'] = activities['set_size'].astype(int)
     in_df['description'] = activities['annotation']
     in_df = in_df.dropna()
